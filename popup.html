@@ -1,0 +1,100 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ATS Resume Scorer</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <main class="app">
+    <header>
+      <h1>ATS Resume Scorer</h1>
+      <button id="settingsBtn" class="ghost">Settings</button>
+    </header>
+
+    <section id="status" class="status"></section>
+
+    <section id="resumeSection" class="card">
+      <h2>Resume</h2>
+      <div id="resumeSavedState" class="hidden">
+        <p><strong>Saved resume:</strong> <span id="resumeMeta"></span></p>
+        <div class="row">
+          <button id="scanBtn">Scan This Job</button>
+          <button id="replaceBtn" class="ghost">Replace</button>
+          <button id="clearResumeBtn" class="danger">Clear</button>
+        </div>
+      </div>
+
+      <div id="resumeInputState">
+        <label for="resumeText">Paste resume text</label>
+        <textarea id="resumeText" rows="10" placeholder="Paste your full resume text..."></textarea>
+        <div class="row">
+          <button id="saveResumeBtn">Save Resume Text</button>
+        </div>
+
+        <hr />
+        <label for="resumePdf">Or upload resume PDF (stored locally)</label>
+        <input id="resumePdf" type="file" accept="application/pdf,.pdf" />
+        <div class="row">
+          <button id="savePdfBtn" class="ghost">Save Resume PDF</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="resultsSection" class="card hidden">
+      <h2>Match Results</h2>
+      <div class="scoreGrid">
+        <p class="score">Base: <span id="scoreValue">-</span>/100</p>
+        <p class="score ai">AI-Calibrated: <span id="aiScoreValue">-</span>/100</p>
+      </div>
+      <p><strong>Job Title:</strong> <span id="jobTitle">-</span></p>
+
+      <div class="row">
+        <button id="aiCalibrateBtn" class="ghost">AI Calibrate (OpenRouter)</button>
+      </div>
+
+      <section id="aiInsights" class="subcard hidden">
+        <h3>AI Role Analysis</h3>
+        <p><strong>Domain:</strong> <span id="aiDomain">-</span></p>
+        <p><strong>Confidence:</strong> <span id="aiConfidence">-</span></p>
+      </section>
+
+      <div class="chipsWrap">
+        <h3>Matched Keywords</h3>
+        <div id="matchedKeywords" class="chips"></div>
+      </div>
+
+      <div class="chipsWrap">
+        <h3>Missing Keywords</h3>
+        <div id="missingKeywords" class="chips"></div>
+      </div>
+    </section>
+
+    <section id="settingsSection" class="card hidden">
+      <h2>Settings</h2>
+      <label for="apiProvider">AI Provider</label>
+      <select id="apiProvider">
+        <option value="openrouter">OpenRouter</option>
+        <option value="gemini">Gemini</option>
+      </select>
+
+      <label for="apiKey">API Key</label>
+      <input id="apiKey" type="password" placeholder="OpenRouter: sk-or-... / Gemini: AIza..." />
+
+      <label for="modelName">Model</label>
+      <input id="modelName" type="text" placeholder="openrouter/auto" />
+
+      <div class="row">
+        <button id="saveApiKeyBtn">Save Settings</button>
+        <button id="clearApiKeyBtn" class="danger">Clear</button>
+      </div>
+    </section>
+  </main>
+
+  <script src="scorer.js"></script>
+  <script src="ai.js"></script>
+  <script src="learning.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

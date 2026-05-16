@@ -1,0 +1,12 @@
+{
+  "manifest_version": 3,
+  "name": "ATS Resume Scorer",
+  "version": "0.2.0",
+  "description": "Score your resume against the current job description.",
+  "permissions": ["activeTab", "scripting", "storage", "tabs"],
+  "host_permissions": ["<all_urls>"],
+  "action": {
+    "default_title": "ATS Resume Scorer",
+    "default_popup": "popup.html"
+  }
+}
