@@ -86,7 +86,7 @@
             <p style="font-size:13px; font-weight:700; color:#1a1c1f; margin:0 0 12px;">Resume Setup</p>
 
             <!-- Saved State -->
-            <div id="resumeSavedState" style="background:#f3f3f7; border:1px solid #bbc9ce; border-radius:10px; padding:12px; display:flex; flex-direction:column; gap:10px;">
+            <div id="resumeSavedState" style="display:none; background:#f3f3f7; border:1px solid #bbc9ce; border-radius:10px; padding:12px; flex-direction:column; gap:10px;">
                 <div style="display:flex; align-items:center; gap:10px;">
                     <div style="width:36px; height:36px; border-radius:50%; background:#18d2f5; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
                         <span class="material-symbols-outlined" style="font-size:18px; color:#005666; font-variation-settings:'FILL' 1;">description</span>
@@ -105,7 +105,7 @@
             </div>
 
             <!-- Input State -->
-            <div id="resumeInputState" style="display:none; background:#f3f3f7; border:1px solid #bbc9ce; border-radius:10px; padding:12px; flex-direction:column; gap:10px; margin-top:12px;">
+            <div id="resumeInputState" style="display:flex; background:#f3f3f7; border:1px solid #bbc9ce; border-radius:10px; padding:12px; flex-direction:column; gap:10px; margin-top:12px;">
                 <textarea id="resumeText" rows="5" placeholder="Paste your resume text here…"
                           style="width:100%; background:#ffffff; color:#1a1c1f; border:1px solid #bbc9ce; border-radius:8px; padding:10px; font-size:13px; font-family:'Sora',sans-serif; outline:none; resize:none; box-sizing:border-box;"></textarea>
                 <div style="text-align:center; font-size:11px; color:#3c494d; font-weight:600;">— OR —</div>
@@ -157,6 +157,16 @@
                     <span class="material-symbols-outlined" style="font-size:17px; font-variation-settings:'FILL' 1;">psychology</span>
                     AI Scoring
                 </button>
+            </div>
+
+            <!-- Score Feedback -->
+            <div id="feedbackSection" style="display:none; background:#ffffff; border:1px solid #bbc9ce; border-radius:14px; padding:12px 14px; box-shadow:0 2px 8px rgba(0,0,0,0.06);">
+                <p style="font-size:12px; font-weight:700; color:#1a1c1f; margin:0 0 8px;">Was this score accurate?</p>
+                <div style="display:flex; gap:8px;">
+                    <button type="button" id="feedbackUpBtn" style="flex:1; padding:8px; background:#e8f8fb; color:#00687a; border:1px solid #00687a; border-radius:8px; font-size:12px; font-weight:700; font-family:'Sora',sans-serif; cursor:pointer;">👍 Yes</button>
+                    <button type="button" id="feedbackDownBtn" style="flex:1; padding:8px; background:#fff0f5; color:#b7004f; border:1px solid #b7004f; border-radius:8px; font-size:12px; font-weight:700; font-family:'Sora',sans-serif; cursor:pointer;">👎 No</button>
+                </div>
+                <p id="feedbackMsg" style="display:none; font-size:11px; color:#3c494d; margin:8px 0 0;"></p>
             </div>
 
             <!-- Matched Keywords -->

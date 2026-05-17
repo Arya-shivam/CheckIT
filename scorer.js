@@ -21,7 +21,6 @@
   };
 
   const SECTION_HEADERS = ['summary','professional summary','experience','work experience','employment','education','skills','projects','certifications'];
-  const STANDARD_FONTS = ['arial', 'calibri', 'times new roman'];
 
   function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
 
@@ -63,6 +62,9 @@
 
   function extractPhrases(text, maxPhrases = 15, noise = new Set()) {
     const words = tokenize(text);
+    const unigramFreq = new Map();
+    for (const w of words) unigramFreq.set(w, (unigramFreq.get(w) || 0) + 1);
+
     const grams = new Map();
     for (let i = 0; i < words.length - 1; i++) {
       const bi = `${words[i]} ${words[i + 1]}`;
@@ -72,11 +74,18 @@
         grams.set(tri, (grams.get(tri) || 0) + 1);
       }
     }
+
     return [...grams.entries()]
-      .filter(([p, c]) => c >= 2 && p.split(' ').every(t => isUsefulKeyword(t, noise)))
-      .sort((a, b) => b[1] - a[1])
+      .filter(([p]) => p.split(' ').every(t => isUsefulKeyword(t, noise)))
+      .map(([p, tf]) => {
+        const toks = p.split(' ');
+        const specificity = toks.reduce((s, t) => s + (1 / Math.log2(2 + (unigramFreq.get(t) || 1))), 0) / toks.length;
+        const phraseScore = (1 + Math.log2(1 + tf)) * specificity * (toks.length === 3 ? 1.1 : 1);
+        return { p, phraseScore };
+      })
+      .sort((a, b) => b.phraseScore - a.phraseScore)
       .slice(0, maxPhrases)
-      .map(([p]) => p);
+      .map(x => x.p);
   }
 
   function extractRequiredPreferredSignals(jdText) {
@@ -94,10 +103,14 @@
     const noise = buildNoiseSet(profile);
     const boosts = new Set((profile?.keyword_boosts || []).map(x => stem(normalize(String(x)))));
     const freq = [...keywordFreq(jdText).entries()]
-      .filter(([k, c]) => isUsefulKeyword(k, noise) && (c >= 2 || SKILLS.includes(k) || boosts.has(k)))
+      .filter(([k, c]) => isUsefulKeyword(k, noise) && (c >= 1 || SKILLS.includes(k) || boosts.has(k)))
       .sort((a, b) => b[1] - a[1])
       .slice(0, topN)
-      .map(([k, c]) => [k, boosts.has(k) ? c * 1.35 : c]);
+      .map(([k, c]) => {
+        const tfWeight = 1 + Math.log2(1 + c);
+        const boost = boosts.has(k) ? 1.35 : 1;
+        return [k, tfWeight * boost];
+      });
 
     const total = freq.reduce((s, [, w]) => s + w, 0) || 1;
     let hit = 0;
@@ -145,10 +158,11 @@
   }
 
   function detectMetadataHints(resumeText) {
-    const t = normalize(resumeText);
-    const hasBullets = /(•|-\s|\*\s)/.test(resumeText || '');
-    const hasFontsMentioned = STANDARD_FONTS.some(f => t.includes(f));
-    return clamp((hasBullets ? 0.6 : 0.4) + (hasFontsMentioned ? 0.4 : 0.2), 0, 1);
+    const t = resumeText || '';
+    const hasBullets = /(•|-\s|\*\s)/.test(t);
+    const quantifiedHits = t.match(/(?:\b\d+(?:\.\d+)?%\b|\$\s?\d+[\d,]*(?:\.\d+)?\s?[kKmMbB]?|\b\d+(?:\.\d+)?\s?(?:x|years?|yrs?|months?|users?|clients?|projects?)\b)/g) || [];
+    const quantifiedRatio = clamp(quantifiedHits.length / 12, 0, 1);
+    return clamp((hasBullets ? 0.45 : 0.25) + (quantifiedRatio * 0.55), 0, 1);
   }
 
   function keywordDensityPenalty(keywordRatio, resumeNorm, keywords) {
@@ -209,13 +223,20 @@
     const skillsScore = (skillsRatio * 0.75 + mustRatio * 0.25) * 20;
     const metadataScore = (contactPresence * 0.55 + metadataHints * 0.45) * 10;
 
-    // Calibrated recomposition (keeps AI learning influence)
-    const calibrated =
-      keywordRatio * (w.keywords * 45) +
-      skillsRatio * (w.skills * 45) +
-      phraseRatio * (w.phrases * 20) +
-      titleRatio * (w.title_alignment * 10) +
-      ((sectionCoverage.ratio + dateConsistency.ratio) / 2) * (w.formatting * 25);
+    // Calibrated recomposition on a consistent 0-100 scale
+    const keywordComponent = clamp(keywordRatio * 0.75 + phraseRatio * 0.15 + titleRatio * 0.10, 0, 1);
+    const skillsComponent = clamp(skillsRatio * 0.75 + mustRatio * 0.25, 0, 1);
+    const phraseComponent = clamp(phraseRatio, 0, 1);
+    const titleComponent = clamp(titleRatio, 0, 1);
+    const formattingComponent = clamp(((sectionCoverage.ratio + dateConsistency.ratio) / 2) * 0.8 + metadataHints * 0.2, 0, 1);
+
+    const calibrated = 100 * (
+      w.keywords * keywordComponent +
+      w.skills * skillsComponent +
+      w.phrases * phraseComponent +
+      w.title_alignment * titleComponent +
+      w.formatting * formattingComponent
+    );
 
     const strictRequiredPenalty = requiredPreferred.required && mustHave.length && mustRatio < 0.5 ? 8 : 0;
     const densityPenalty = keywordDensityPenalty(keywordRatio, resumeNorm, keywordCoverage.allKeywords);

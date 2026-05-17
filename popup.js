@@ -34,7 +34,11 @@ const els = {
   apiKey: document.getElementById('apiKey'),
   modelName: document.getElementById('modelName'),
   saveApiKeyBtn: document.getElementById('saveApiKeyBtn'),
-  clearApiKeyBtn: document.getElementById('clearApiKeyBtn')
+  clearApiKeyBtn: document.getElementById('clearApiKeyBtn'),
+  feedbackSection: document.getElementById('feedbackSection'),
+  feedbackUpBtn: document.getElementById('feedbackUpBtn'),
+  feedbackDownBtn: document.getElementById('feedbackDownBtn'),
+  feedbackMsg: document.getElementById('feedbackMsg')
 };
 
 let lastScanContext = null;
@@ -295,6 +299,15 @@ function renderResult(baseResult, jdTitle, aiResult = null) {
   if (!aiResult) {
     // Hide AI panel until AI Scoring is run
     els.aiInsights.style.display = 'none';
+    if (els.feedbackSection) els.feedbackSection.style.display = 'none';
+  } else {
+    if (els.feedbackSection) {
+      els.feedbackSection.style.display = 'block';
+      if (els.feedbackMsg) {
+        els.feedbackMsg.style.display = 'none';
+        els.feedbackMsg.textContent = '';
+      }
+    }
   }
   // Note: when aiResult is present, renderRecommendations() is called separately
   // by aiCalibrate() with the full recommendations data.
@@ -504,7 +517,8 @@ async function aiCalibrate() {
         baseScore: lastScanContext.baseResult.score,
         aiModelScore: aiProfile.ai_score,
         aiCalibratedScore: finalAIScore,
-        domain: aiProfile.domain, confidence: aiProfile.confidence
+        domain: aiProfile.domain, confidence: aiProfile.confidence,
+        feedback: null
       }
     });
 
@@ -519,6 +533,34 @@ async function aiCalibrate() {
   } catch (err) {
     setAiButtonLoading(null);
     setStatus(`AI failed: ${err.message}`, true);
+  }
+}
+
+async function submitFeedback(vote) {
+  try {
+    const data = await chrome.storage.local.get(['learning_state', 'last_ai_profile', 'last_scan']);
+    const scan = data.last_scan;
+    const profile = data.last_ai_profile;
+    if (!scan || !profile) return setStatus('Run AI scoring before giving feedback.', true);
+
+    const updated = window.learningEngine.applyUserFeedback(data.learning_state || {}, {
+      vote,
+      domain: scan.domain,
+      aiProfile: profile
+    });
+
+    await chrome.storage.local.set({
+      learning_state: updated,
+      last_scan: { ...scan, feedback: vote, feedback_ts: Date.now() }
+    });
+
+    if (els.feedbackMsg) {
+      els.feedbackMsg.style.display = 'block';
+      els.feedbackMsg.textContent = vote === 'up' ? 'Thanks! We will reinforce this pattern.' : 'Got it. We will downweight this pattern.';
+    }
+    setStatus('Feedback saved.');
+  } catch (err) {
+    setStatus(`Feedback failed: ${err.message}`, true);
   }
 }
 
@@ -539,5 +581,7 @@ els.aiCalibrateBtn.addEventListener('click', aiCalibrate);
 els.settingsBtn.addEventListener('click', toggleSettings);
 els.saveApiKeyBtn.addEventListener('click', saveApiSettings);
 els.clearApiKeyBtn.addEventListener('click', clearApiSettings);
+if (els.feedbackUpBtn) els.feedbackUpBtn.addEventListener('click', () => submitFeedback('up'));
+if (els.feedbackDownBtn) els.feedbackDownBtn.addEventListener('click', () => submitFeedback('down'));
 
 loadState();

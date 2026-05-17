@@ -1,6 +1,10 @@
 (function () {
   const MAX_TERMS = 60;
 
+  function clamp(v, min, max) {
+    return Math.max(min, Math.min(max, v));
+  }
+
   function normalizeTerm(t) {
     return String(t || '').toLowerCase().trim();
   }
@@ -30,7 +34,9 @@
     for (const t of terms || []) {
       const k = normalizeTerm(t);
       if (!k || k.length < 3) continue;
-      out[k] = (out[k] || 0) + inc;
+      const next = (out[k] || 0) + inc;
+      if (next <= 0) delete out[k];
+      else out[k] = next;
     }
     // cap map size
     const sorted = Object.entries(out).sort((a, b) => b[1] - a[1]).slice(0, MAX_TERMS);
@@ -63,17 +69,56 @@
 
   function updateLearningState(state = {}, aiProfile = {}, jdMeta = {}) {
     const domain = aiProfile.domain || detectDomainHeuristic(jdMeta.jdText, jdMeta.jobTitle);
-    const prev = state.domain_profiles?.[domain] || { domain, scans: 0, weights: null, mustSkillFreq: {}, noiseFreq: {}, keywordFreq: {} };
-    const conf = Number(aiProfile.confidence || 0.5);
-    const alpha = conf >= 0.8 ? 0.35 : conf >= 0.65 ? 0.25 : 0.15;
+    const prev = state.domain_profiles?.[domain] || { domain, scans: 0, weights: null, mustSkillFreq: {}, noiseFreq: {}, keywordFreq: {}, outcomes: { up: 0, down: 0 } };
 
     const next = {
       ...prev,
       scans: (prev.scans || 0) + 1,
-      weights: mergeWeights(prev.weights || {}, aiProfile.weights || {}, alpha),
-      mustSkillFreq: addFreq(prev.mustSkillFreq, aiProfile.must_have_skills, conf),
-      noiseFreq: addFreq(prev.noiseFreq, aiProfile.negative_keywords, conf),
-      keywordFreq: addFreq(prev.keywordFreq, aiProfile.keyword_boosts || aiProfile.nice_to_have_skills, conf * 0.7)
+      pendingProfile: {
+        weights: aiProfile.weights || null,
+        must_have_skills: aiProfile.must_have_skills || [],
+        negative_keywords: aiProfile.negative_keywords || [],
+        keyword_boosts: aiProfile.keyword_boosts || aiProfile.nice_to_have_skills || [],
+        confidence: Number(aiProfile.confidence || 0.5),
+        ts: Date.now()
+      }
+    };
+
+    return {
+      ...state,
+      domain_profiles: {
+        ...(state.domain_profiles || {}),
+        [domain]: next
+      },
+      updated_at: Date.now()
+    };
+  }
+
+  function applyUserFeedback(state = {}, payload = {}) {
+    const domain = payload.domain || detectDomainHeuristic(payload.jdText, payload.jobTitle);
+    const vote = payload.vote === 'up' ? 'up' : payload.vote === 'down' ? 'down' : null;
+    if (!vote) return state;
+
+    const prev = state.domain_profiles?.[domain] || { domain, scans: 0, weights: null, mustSkillFreq: {}, noiseFreq: {}, keywordFreq: {}, outcomes: { up: 0, down: 0 } };
+    const pending = payload.aiProfile || prev.pendingProfile;
+    if (!pending) return state;
+
+    const baseConf = Number(pending.confidence || 0.5);
+    const signed = vote === 'up' ? 1 : -1;
+    const alpha = vote === 'up' ? clamp(0.12 + baseConf * 0.18, 0.12, 0.35) : clamp(0.08 + baseConf * 0.10, 0.08, 0.2);
+
+    const next = {
+      ...prev,
+      outcomes: {
+        up: (prev.outcomes?.up || 0) + (vote === 'up' ? 1 : 0),
+        down: (prev.outcomes?.down || 0) + (vote === 'down' ? 1 : 0)
+      },
+      weights: mergeWeights(prev.weights || {}, pending.weights || {}, alpha),
+      mustSkillFreq: addFreq(prev.mustSkillFreq, pending.must_have_skills, signed > 0 ? (0.8 + baseConf * 0.6) : -0.5),
+      noiseFreq: addFreq(prev.noiseFreq, pending.negative_keywords, signed > 0 ? (0.8 + baseConf * 0.6) : -0.5),
+      keywordFreq: addFreq(prev.keywordFreq, pending.keyword_boosts, signed > 0 ? (0.6 + baseConf * 0.5) : -0.4),
+      pendingProfile: null,
+      last_feedback: { vote, ts: Date.now() }
     };
 
     return {
@@ -89,6 +134,7 @@
   window.learningEngine = {
     detectDomainHeuristic,
     profileFromDomainLearning,
-    updateLearningState
+    updateLearningState,
+    applyUserFeedback
   };
 })();
