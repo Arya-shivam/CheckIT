@@ -28,7 +28,7 @@
         .dot-loader span:nth-child(3) { animation: pulse-dots 1.2s ease-in-out 0.4s infinite; }
     </style>
 </head>
-<body class="min-h-screen flex flex-col w-[400px] mx-auto overflow-hidden" style="background:#f3f3f7; color:#1a1c1f; font-family:'Sora',sans-serif;">
+<body class="min-h-screen flex flex-col w-[400px] mx-auto overflow-hidden" style="height:100vh; background:#f3f3f7; color:#1a1c1f; font-family:'Sora',sans-serif;">
 
     <!-- Header -->
     <header style="background:#ffffff; border-bottom:1px solid #bbc9ce; box-shadow:0 1px 4px rgba(0,0,0,0.06);"
@@ -38,14 +38,13 @@
             <span style="font-size:17px; font-weight:700; letter-spacing:-0.01em; color:#1a1c1f;">ATS Scorer</span>
         </div>
         <button id="settingsBtn"
-                style="color:#3c494d; border-radius:50%; width:36px; height:36px; display:flex; align-items:center; justify-content:center; transition:background 0.2s;"
-                onmouseover="this.style.background='#e8e8ec'" onmouseout="this.style.background='transparent'">
+                style="color:#3c494d; border-radius:50%; width:36px; height:36px; display:flex; align-items:center; justify-content:center; transition:background 0.2s;">
             <span class="material-symbols-outlined" style="font-size:20px;">settings</span>
         </button>
     </header>
 
     <!-- Main -->
-    <main class="flex-1 overflow-y-auto scrollbar-hide" style="padding:14px; display:flex; flex-direction:column; gap:12px;">
+    <main class="flex-1 overflow-y-auto scrollbar-hide" style="min-height:0; padding:14px; display:flex; flex-direction:column; gap:12px;">
 
         <!-- Status -->
         <div id="status" style="display:none; padding:10px 14px; border-radius:10px; font-size:12px; text-align:center; font-weight:600;"></div>
@@ -74,11 +73,9 @@
                 </div>
                 <div style="display:flex; gap:8px; margin-top:4px;">
                     <button id="saveApiKeyBtn"
-                            style="flex:1; padding:8px; background:#00687a; color:#fff; border:none; border-radius:8px; font-size:12px; font-weight:700; font-family:'Sora',sans-serif; cursor:pointer; transition:background 0.2s;"
-                            onmouseover="this.style.background='#005666'" onmouseout="this.style.background='#00687a'">Save</button>
+                            style="flex:1; padding:8px; background:#00687a; color:#fff; border:none; border-radius:8px; font-size:12px; font-weight:700; font-family:'Sora',sans-serif; cursor:pointer; transition:background 0.2s;">Save</button>
                     <button id="clearApiKeyBtn"
-                            style="flex:1; padding:8px; background:transparent; color:#b7004f; border:1px solid #b7004f; border-radius:8px; font-size:12px; font-weight:700; font-family:'Sora',sans-serif; cursor:pointer; transition:all 0.2s;"
-                            onmouseover="this.style.background='#fff0f5'" onmouseout="this.style.background='transparent'">Clear</button>
+                            style="flex:1; padding:8px; background:transparent; color:#b7004f; border:1px solid #b7004f; border-radius:8px; font-size:12px; font-weight:700; font-family:'Sora',sans-serif; cursor:pointer; transition:all 0.2s;">Clear</button>
                 </div>
             </div>
         </div>
@@ -101,11 +98,9 @@
                 </div>
                 <div style="display:flex; gap:8px;">
                     <button id="replaceBtn"
-                            style="flex:1; padding:7px; background:transparent; color:#00687a; border:1.5px solid #00687a; border-radius:8px; font-size:12px; font-weight:700; font-family:'Sora',sans-serif; cursor:pointer; transition:background 0.2s;"
-                            onmouseover="this.style.background='#e8f8fb'" onmouseout="this.style.background='transparent'">Replace</button>
+                            style="flex:1; padding:7px; background:transparent; color:#00687a; border:1.5px solid #00687a; border-radius:8px; font-size:12px; font-weight:700; font-family:'Sora',sans-serif; cursor:pointer; transition:background 0.2s;">Replace</button>
                     <button id="clearResumeBtn"
-                            style="flex:1; padding:7px; background:transparent; color:#b7004f; border:1.5px solid #b7004f; border-radius:8px; font-size:12px; font-weight:700; font-family:'Sora',sans-serif; cursor:pointer; transition:background 0.2s;"
-                            onmouseover="this.style.background='#fff0f5'" onmouseout="this.style.background='transparent'">Clear</button>
+                            style="flex:1; padding:7px; background:transparent; color:#b7004f; border:1.5px solid #b7004f; border-radius:8px; font-size:12px; font-weight:700; font-family:'Sora',sans-serif; cursor:pointer; transition:background 0.2s;">Clear</button>
                 </div>
             </div>
 
@@ -117,8 +112,7 @@
                 <input type="file" id="resumePdf" accept=".pdf,.doc,.docx"
                        style="width:100%; font-size:12px; font-family:'Sora',sans-serif; color:#3c494d; box-sizing:border-box;">
                 <button id="saveResumeBtn"
-                        style="width:100%; padding:9px; background:#00687a; color:#ffffff; border:none; border-radius:8px; font-size:13px; font-weight:700; font-family:'Sora',sans-serif; cursor:pointer; margin-top:4px; transition:background 0.2s;"
-                        onmouseover="this.style.background='#005666'" onmouseout="this.style.background='#00687a'">Save Resume</button>
+                        style="width:100%; padding:9px; background:#00687a; color:#ffffff; border:none; border-radius:8px; font-size:13px; font-weight:700; font-family:'Sora',sans-serif; cursor:pointer; margin-top:4px; transition:background 0.2s;">Save Resume</button>
             </div>
         </div>
 
@@ -127,9 +121,7 @@
             <p style="font-size:16px; font-weight:800; color:#1a1c1f; margin:0 0 6px; letter-spacing:-0.02em;">Ready to Analyze?</p>
             <p style="font-size:12px; color:#3c494d; margin:0 0 16px; line-height:1.6;">Scan the current job page and match it against your resume.</p>
             <button id="scanBtn"
-                    style="width:100%; display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:12px 16px; background:#18d2f5; color:#001f26; border:none; border-radius:12px; font-size:14px; font-weight:700; font-family:'Sora',sans-serif; cursor:pointer; box-shadow:0 0 20px rgba(24,210,245,0.35); transition:all 0.3s; letter-spacing:-0.01em;"
-                    onmouseover="this.style.boxShadow='0 0 28px rgba(24,210,245,0.55)'; this.style.transform='translateY(-1px)'"
-                    onmouseout="this.style.boxShadow='0 0 20px rgba(24,210,245,0.35)'; this.style.transform='translateY(0)'">
+                    style="width:100%; display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:12px 16px; background:#18d2f5; color:#001f26; border:none; border-radius:12px; font-size:14px; font-weight:700; font-family:'Sora',sans-serif; cursor:pointer; box-shadow:0 0 20px rgba(24,210,245,0.35); transition:all 0.3s; letter-spacing:-0.01em;">
                 <span class="material-symbols-outlined" style="font-size:20px; font-variation-settings:'FILL' 1;">qr_code_scanner</span>
                 Scan Job Page
             </button>
@@ -161,8 +153,7 @@
                     </div>
                 </div>
                 <button id="aiCalibrateBtn"
-                        style="margin-top:16px; display:inline-flex; align-items:center; gap:6px; padding:8px 16px; background:#e40a65; color:#fff; border:none; border-radius:8px; font-size:12px; font-weight:700; font-family:'Sora',sans-serif; cursor:pointer; transition:background 0.2s;"
-                        onmouseover="this.style.background='#c0004f'" onmouseout="this.style.background='#e40a65'">
+                        style="margin-top:16px; display:inline-flex; align-items:center; gap:6px; padding:8px 16px; background:#e40a65; color:#fff; border:none; border-radius:8px; font-size:12px; font-weight:700; font-family:'Sora',sans-serif; cursor:pointer; transition:background 0.2s;">
                     <span class="material-symbols-outlined" style="font-size:17px; font-variation-settings:'FILL' 1;">psychology</span>
                     AI Scoring
                 </button>
