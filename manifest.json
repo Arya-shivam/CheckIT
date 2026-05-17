@@ -3,11 +3,16 @@
   "name": "ATS Resume Scorer",
   "version": "0.2.0",
   "description": "Score your resume against the current job description.",
-  "permissions": ["activeTab", "scripting", "storage", "tabs"],
+  "permissions": ["activeTab", "scripting", "storage", "tabs", "sidePanel"],
   "host_permissions": ["<all_urls>"],
   "action": {
-    "default_title": "ATS Resume Scorer",
-    "default_popup": "popup.html"
+    "default_title": "ATS Resume Scorer"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "side_panel": {
+    "default_path": "popup.html"
   },
   "web_accessible_resources": [
     {
