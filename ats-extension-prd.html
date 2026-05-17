@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>PRD — ATS Resume Scorer Chrome Extension</title>
+</head>
+<body>
+
+<h1>PRD: ATS Resume Scorer — Chrome Extension</h1>
+<p><b>Version:</b> 1.0 &nbsp;|&nbsp; <b>Date:</b> May 2026 &nbsp;|&nbsp; <b>Status:</b> Draft</p>
+
+<hr>
+
+<h2>1. Problem</h2>
+<p>Job seekers apply to roles without knowing if their resume matches the job description. ATS systems reject resumes before a human sees them. There is no fast, in-browser tool to score a resume against a live JD without copying text around or uploading to sketchy third-party sites.</p>
+
+<hr>
+
+<h2>2. Goal</h2>
+<p>A Chrome extension that sits on any job posting, scrapes the JD, scores the user's stored resume against it instantly, and optionally gives AI-powered feedback and a tailored resume — all without leaving the tab.</p>
+
+<hr>
+
+<h2>3. User Flow</h2>
+<ol>
+  <li>User opens any job posting (LinkedIn, Naukri, Greenhouse, Lever, etc.)</li>
+  <li>Clicks the extension icon — popup opens</li>
+  <li>Resume already stored from a previous upload, or user uploads/pastes now</li>
+  <li>Extension scrapes the active tab's JD text via content script</li>
+  <li>Runs TF-IDF + keyword matching locally — shows score instantly</li>
+  <li>User optionally clicks "Get AI Feedback" or "Tailor Resume" (API-powered)</li>
+</ol>
+
+<hr>
+
+<h2>4. Feature Tiers</h2>
+
+<h3>Tier 1 — Instant Score (Free, Offline)</h3>
+<ul>
+  <li>Scrape JD text from current tab</li>
+  <li>Parse stored resume (PDF via pdf.js or pasted text)</li>
+  <li>TF-IDF keyword extraction on JD</li>
+  <li>Keyword overlap scoring against resume</li>
+  <li>Score out of 100 with missing keywords list</li>
+  <li>No API key needed. Runs entirely in browser.</li>
+</ul>
+
+<h3>Tier 2 — AI Feedback (Claude API, On-Demand)</h3>
+<ul>
+  <li>"Get AI Feedback" button — only called when clicked</li>
+  <li>Sends resume text + JD text to Claude API</li>
+  <li>Returns: why the score is what it is, top 3 things to fix, priority keyword gaps</li>
+  <li>Requires user to enter API key once (stored in chrome.storage.local)</li>
+</ul>
+
+<h3>Tier 3 — Tailored Resume (Claude API, On-Demand)</h3>
+<ul>
+  <li>"Tailor My Resume" button</li>
+  <li>Claude rewrites bullet points, summary, skills order to match JD</li>
+  <li>Diff view: original vs tailored per section</li>
+  <li>Download as PDF via jsPDF (in-browser, no server)</li>
+  <li>Uses same API key as Tier 2</li>
+</ul>
+
+<hr>
+
+<h2>5. Scoring Logic (Tier 1)</h2>
+
+<h3>Keyword Extraction from JD</h3>
+<ul>
+  <li>Strip HTML, lowercase, remove stopwords</li>
+  <li>TF-IDF on remaining tokens to find high-signal keywords</li>
+  <li>Also extract tech terms via simple regex patterns and a curated skills dictionary</li>
+</ul>
+
+<h3>Score Formula</h3>
+<ul>
+  <li>60% — Keyword overlap (how many JD keywords appear in resume)</li>
+  <li>25% — Skills section match (exact + fuzzy match on skills list)</li>
+  <li>15% — Job title / role alignment</li>
+</ul>
+
+<h3>Output</h3>
+<ul>
+  <li>Score: 0–100</li>
+  <li>Matched keywords</li>
+  <li>Missing keywords</li>
+  <li>Match % per section</li>
+</ul>
+
+<hr>
+
+<h2>6. Technical Architecture</h2>
+
+<h3>Extension File Structure</h3>
+<pre>
+/extension
+  manifest.json         Manifest V3
+  popup.html            Extension popup UI
+  popup.js              UI logic, scoring calls
+  content-script.js     Scrapes JD from active tab DOM
+  background.js         Service worker (minimal)
+  scorer.js             TF-IDF + keyword matching logic
+  resume-parser.js      pdf.js integration, text extraction
+  ai.js                 Claude API calls (Tier 2 + 3)
+  pdf-export.js         jsPDF resume download
+  /lib
+    pdf.js              Mozilla PDF.js (lazy loaded)
+    jspdf.min.js        jsPDF for export
+</pre>
+
+<h3>Data Storage (chrome.storage.local)</h3>
+<pre>
+{
+  "resume_raw_text": "...",
+  "resume_structured": { name, summary, skills[], experience[], education[] },
+  "api_key": "sk-ant-...",
+  "resume_vault": [{ job_title, date, tailored_resume }]
+}
+</pre>
+
+<h3>JD Scraping Strategy</h3>
+<ul>
+  <li>Primary: target known selectors for LinkedIn, Naukri, Greenhouse, Lever, Workday</li>
+  <li>Fallback: grab all visible body text, strip nav/header/footer via heuristics</li>
+  <li>Manual fallback: user highlights JD text and triggers scan via right-click context menu</li>
+</ul>
+
+<h3>Resume Input Methods</h3>
+<ul>
+  <li>Upload PDF → parsed via pdf.js → stored as raw text + structured JSON</li>
+  <li>Paste plain text → stored directly</li>
+  <li>Persists across sessions until user replaces it</li>
+</ul>
+
+<hr>
+
+<h2>7. Popup UI Screens</h2>
+
+<h3>Screen 1 — No Resume Stored</h3>
+<ul>
+  <li>Upload PDF button</li>
+  <li>Or paste resume text area</li>
+  <li>Save Resume button</li>
+</ul>
+
+<h3>Screen 2 — Resume Stored, Ready to Scan</h3>
+<ul>
+  <li>Resume name + "Replace" link</li>
+  <li>"Scan This Job" button (primary CTA)</li>
+</ul>
+
+<h3>Screen 3 — Results</h3>
+<ul>
+  <li>Score: large number (e.g. 67/100)</li>
+  <li>Matched keywords</li>
+  <li>Missing keywords</li>
+  <li>"Get AI Feedback" button (Tier 2)</li>
+  <li>"Tailor My Resume" button (Tier 3)</li>
+</ul>
+
+<h3>Screen 4 — AI Feedback</h3>
+<ul>
+  <li>Narrative explanation of score</li>
+  <li>Top 3 fixes ordered by impact</li>
+</ul>
+
+<h3>Screen 5 — Tailored Resume</h3>
+<ul>
+  <li>Section-by-section diff view</li>
+  <li>Copy section buttons</li>
+  <li>Download as PDF button</li>
+</ul>
+
+<h3>Settings</h3>
+<ul>
+  <li>API key input + save</li>
+  <li>Clear stored resume</li>
+  <li>View resume vault</li>
+</ul>
+
+<hr>
+
+<h2>8. Resume Vault</h2>
+<p>Every time a resume is tailored, save a copy with job title + date as key in chrome.storage.local. User can view past tailored versions and re-download. No external DB needed. Cap at 20 entries.</p>
+
+<hr>
+
+<h2>9. Risks and Mitigations</h2>
+
+<table border="1" cellpadding="8" cellspacing="0">
+  <tr>
+    <th>Risk</th>
+    <th>Severity</th>
+    <th>Mitigation</th>
+  </tr>
+  <tr>
+    <td>JD scraping fails on unknown job sites</td>
+    <td>High</td>
+    <td>Fallback to full body text grab. Manual selection via context menu.</td>
+  </tr>
+  <tr>
+    <td>PDF parsing fails on complex resume layouts</td>
+    <td>Medium</td>
+    <td>Fallback to plain text paste. Show clear error message.</td>
+  </tr>
+  <tr>
+    <td>TF-IDF misses jargon and acronyms</td>
+    <td>Medium</td>
+    <td>Maintain a curated tech skills dictionary for exact matching alongside TF-IDF.</td>
+  </tr>
+  <tr>
+    <td>API key security</td>
+    <td>Medium</td>
+    <td>chrome.storage.local is sandboxed per extension. Document clearly to user.</td>
+  </tr>
+  <tr>
+    <td>chrome.storage.local 10MB size limit</td>
+    <td>Low</td>
+    <td>Cap vault at 20 entries. Prompt user to clear old ones.</td>
+  </tr>
+</table>
+
+<hr>
+
+<h2>10. Build Milestones</h2>
+
+<table border="1" cellpadding="8" cellspacing="0">
+  <tr>
+    <th>Phase</th>
+    <th>Scope</th>
+    <th>Timeline</th>
+  </tr>
+  <tr>
+    <td>Phase 1</td>
+    <td>Tier 1 — scraping, TF-IDF scoring, popup UI, resume storage</td>
+    <td>Week 1–2</td>
+  </tr>
+  <tr>
+    <td>Phase 2</td>
+    <td>Tier 2 — AI feedback via Claude API, settings screen, API key flow</td>
+    <td>Week 3</td>
+  </tr>
+  <tr>
+    <td>Phase 3</td>
+    <td>Tier 3 — tailored resume, diff view, PDF export, resume vault</td>
+    <td>Week 4–5</td>
+  </tr>
+  <tr>
+    <td>Phase 4</td>
+    <td>Site-specific scraping for top 5 job boards, polish, Chrome Web Store publish</td>
+    <td>Week 6</td>
+  </tr>
+</table>
+
+<hr>
+
+<h2>11. Out of Scope (v1)</h2>
+<ul>
+  <li>Multi-resume management</li>
+  <li>Backend or user accounts</li>
+  <li>Firefox / Safari support</li>
+  <li>Cover letter generation</li>
+  <li>Application tracking</li>
+</ul>
+
+<hr>
+
+<h2>12. Success Metrics</h2>
+<ul>
+  <li>Tier 1 score loads in under 2 seconds on any job page</li>
+  <li>Scraping works on LinkedIn, Naukri, Greenhouse, Lever out of the box</li>
+  <li>PDF parse succeeds on 90%+ of standard resume formats</li>
+  <li>Tailored resume downloads without a server call</li>
+</ul>
+
+<hr>
+
+<p><i>End of Document</i></p>
+
+</body>
+</html>

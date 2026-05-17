@@ -8,5 +8,11 @@
   "action": {
     "default_title": "ATS Resume Scorer",
     "default_popup": "popup.html"
-  }
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["pdf.worker.min.js", "pdf.min.js"],
+      "matches": ["<all_urls>"]
+    }
+  ]
 }
