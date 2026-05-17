@@ -1,100 +1,267 @@
-<!doctype html>
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>ATS Resume Scorer</title>
-  <link rel="stylesheet" href="popup.css" />
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>ATS Scorer - Extension</title>
+    <link href="popup.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet"/>
+    <style>
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes pulse-dots {
+            0%, 80%, 100% { opacity: 0.2; transform: scale(0.8); }
+            40%            { opacity: 1;   transform: scale(1);   }
+        }
+        .ai-spinner {
+            width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: #fff; border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            display: inline-block; flex-shrink: 0;
+        }
+        .dot-loader span {
+            display: inline-block; width: 6px; height: 6px;
+            border-radius: 50%; background: #7212ff; margin: 0 2px;
+        }
+        .dot-loader span:nth-child(1) { animation: pulse-dots 1.2s ease-in-out 0s infinite; }
+        .dot-loader span:nth-child(2) { animation: pulse-dots 1.2s ease-in-out 0.2s infinite; }
+        .dot-loader span:nth-child(3) { animation: pulse-dots 1.2s ease-in-out 0.4s infinite; }
+    </style>
 </head>
-<body>
-  <main class="app">
-    <header>
-      <h1>ATS Resume Scorer</h1>
-      <button id="settingsBtn" class="ghost">Settings</button>
+<body class="min-h-screen flex flex-col w-[400px] mx-auto overflow-hidden" style="background:#f3f3f7; color:#1a1c1f; font-family:'Sora',sans-serif;">
+
+    <!-- Header -->
+    <header style="background:#ffffff; border-bottom:1px solid #bbc9ce; box-shadow:0 1px 4px rgba(0,0,0,0.06);"
+            class="w-full sticky top-0 flex justify-between items-center px-4 h-14 z-30">
+        <div class="flex items-center gap-2">
+            <span class="material-symbols-outlined" style="color:#18d2f5; font-size:22px; font-variation-settings:'FILL' 1;">analytics</span>
+            <span style="font-size:17px; font-weight:700; letter-spacing:-0.01em; color:#1a1c1f;">ATS Scorer</span>
+        </div>
+        <button id="settingsBtn"
+                style="color:#3c494d; border-radius:50%; width:36px; height:36px; display:flex; align-items:center; justify-content:center; transition:background 0.2s;"
+                onmouseover="this.style.background='#e8e8ec'" onmouseout="this.style.background='transparent'">
+            <span class="material-symbols-outlined" style="font-size:20px;">settings</span>
+        </button>
     </header>
 
-    <section id="status" class="status"></section>
+    <!-- Main -->
+    <main class="flex-1 overflow-y-auto scrollbar-hide" style="padding:14px; display:flex; flex-direction:column; gap:12px;">
 
-    <section id="resumeSection" class="card">
-      <h2>Resume</h2>
-      <div id="resumeSavedState" class="hidden">
-        <p><strong>Saved resume:</strong> <span id="resumeMeta"></span></p>
-        <div class="row">
-          <button id="scanBtn">Scan This Job</button>
-          <button id="replaceBtn" class="ghost">Replace</button>
-          <button id="clearResumeBtn" class="danger">Clear</button>
+        <!-- Status -->
+        <div id="status" style="display:none; padding:10px 14px; border-radius:10px; font-size:12px; text-align:center; font-weight:600;"></div>
+
+        <!-- Settings Panel -->
+        <div id="settingsSection" style="display:none; background:#ffffff; border:1px solid #bbc9ce; border-radius:14px; padding:16px; box-shadow:0 2px 8px rgba(0,0,0,0.06);">
+            <p style="font-size:13px; font-weight:700; color:#1a1c1f; margin:0 0 12px;">Settings</p>
+            <div style="display:flex; flex-direction:column; gap:10px;">
+                <div>
+                    <label style="font-size:10px; font-weight:600; color:#3c494d; letter-spacing:0.05em; text-transform:uppercase;">API Provider</label>
+                    <select id="apiProvider" style="width:100%; margin-top:4px; background:#f3f3f7; color:#1a1c1f; border:1px solid #bbc9ce; border-radius:8px; padding:8px 10px; font-size:13px; font-family:'Sora',sans-serif; outline:none;">
+                        <option value="gemini">Google Gemini</option>
+                        <option value="openai">OpenAI</option>
+                        <option value="openrouter">OpenRouter</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="font-size:10px; font-weight:600; color:#3c494d; letter-spacing:0.05em; text-transform:uppercase;">API Key</label>
+                    <input type="password" id="apiKey" placeholder="Enter API Key"
+                           style="width:100%; margin-top:4px; background:#f3f3f7; color:#1a1c1f; border:1px solid #bbc9ce; border-radius:8px; padding:8px 10px; font-size:13px; font-family:'Sora',sans-serif; outline:none; box-sizing:border-box;">
+                </div>
+                <div>
+                    <label style="font-size:10px; font-weight:600; color:#3c494d; letter-spacing:0.05em; text-transform:uppercase;">Model (optional)</label>
+                    <input type="text" id="modelName" placeholder="e.g. gemini-1.5-flash"
+                           style="width:100%; margin-top:4px; background:#f3f3f7; color:#1a1c1f; border:1px solid #bbc9ce; border-radius:8px; padding:8px 10px; font-size:13px; font-family:'Sora',sans-serif; outline:none; box-sizing:border-box;">
+                </div>
+                <div style="display:flex; gap:8px; margin-top:4px;">
+                    <button id="saveApiKeyBtn"
+                            style="flex:1; padding:8px; background:#00687a; color:#fff; border:none; border-radius:8px; font-size:12px; font-weight:700; font-family:'Sora',sans-serif; cursor:pointer; transition:background 0.2s;"
+                            onmouseover="this.style.background='#005666'" onmouseout="this.style.background='#00687a'">Save</button>
+                    <button id="clearApiKeyBtn"
+                            style="flex:1; padding:8px; background:transparent; color:#b7004f; border:1px solid #b7004f; border-radius:8px; font-size:12px; font-weight:700; font-family:'Sora',sans-serif; cursor:pointer; transition:all 0.2s;"
+                            onmouseover="this.style.background='#fff0f5'" onmouseout="this.style.background='transparent'">Clear</button>
+                </div>
+            </div>
         </div>
-      </div>
 
-      <div id="resumeInputState">
-        <label for="resumeText">Paste resume text</label>
-        <textarea id="resumeText" rows="10" placeholder="Paste your full resume text..."></textarea>
-        <div class="row">
-          <button id="saveResumeBtn">Save Resume Text</button>
+        <!-- Resume Setup Card -->
+        <div style="background:#ffffff; border:1px solid #bbc9ce; border-radius:14px; padding:16px; box-shadow:0 2px 8px rgba(0,0,0,0.06); position:relative; overflow:hidden;">
+            <div style="position:absolute; top:0; right:0; width:120px; height:120px; background:radial-gradient(circle, rgba(24,210,245,0.12), transparent 70%); pointer-events:none;"></div>
+            <p style="font-size:13px; font-weight:700; color:#1a1c1f; margin:0 0 12px;">Resume Setup</p>
+
+            <!-- Saved State -->
+            <div id="resumeSavedState" style="background:#f3f3f7; border:1px solid #bbc9ce; border-radius:10px; padding:12px; display:flex; flex-direction:column; gap:10px;">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <div style="width:36px; height:36px; border-radius:50%; background:#18d2f5; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                        <span class="material-symbols-outlined" style="font-size:18px; color:#005666; font-variation-settings:'FILL' 1;">description</span>
+                    </div>
+                    <div style="overflow:hidden;">
+                        <p style="font-size:10px; font-weight:600; color:#3c494d; letter-spacing:0.05em; text-transform:uppercase; margin:0 0 2px;">Active Resume</p>
+                        <p id="resumeMeta" style="font-size:13px; font-weight:600; color:#1a1c1f; margin:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">No resume saved</p>
+                    </div>
+                </div>
+                <div style="display:flex; gap:8px;">
+                    <button id="replaceBtn"
+                            style="flex:1; padding:7px; background:transparent; color:#00687a; border:1.5px solid #00687a; border-radius:8px; font-size:12px; font-weight:700; font-family:'Sora',sans-serif; cursor:pointer; transition:background 0.2s;"
+                            onmouseover="this.style.background='#e8f8fb'" onmouseout="this.style.background='transparent'">Replace</button>
+                    <button id="clearResumeBtn"
+                            style="flex:1; padding:7px; background:transparent; color:#b7004f; border:1.5px solid #b7004f; border-radius:8px; font-size:12px; font-weight:700; font-family:'Sora',sans-serif; cursor:pointer; transition:background 0.2s;"
+                            onmouseover="this.style.background='#fff0f5'" onmouseout="this.style.background='transparent'">Clear</button>
+                </div>
+            </div>
+
+            <!-- Input State -->
+            <div id="resumeInputState" style="display:none; background:#f3f3f7; border:1px solid #bbc9ce; border-radius:10px; padding:12px; flex-direction:column; gap:10px; margin-top:12px;">
+                <textarea id="resumeText" rows="5" placeholder="Paste your resume text here…"
+                          style="width:100%; background:#ffffff; color:#1a1c1f; border:1px solid #bbc9ce; border-radius:8px; padding:10px; font-size:13px; font-family:'Sora',sans-serif; outline:none; resize:none; box-sizing:border-box;"></textarea>
+                <div style="text-align:center; font-size:11px; color:#3c494d; font-weight:600;">— OR —</div>
+                <input type="file" id="resumePdf" accept=".pdf,.doc,.docx"
+                       style="width:100%; font-size:12px; font-family:'Sora',sans-serif; color:#3c494d; box-sizing:border-box;">
+                <button id="saveResumeBtn"
+                        style="width:100%; padding:9px; background:#00687a; color:#ffffff; border:none; border-radius:8px; font-size:13px; font-weight:700; font-family:'Sora',sans-serif; cursor:pointer; margin-top:4px; transition:background 0.2s;"
+                        onmouseover="this.style.background='#005666'" onmouseout="this.style.background='#00687a'">Save Resume</button>
+            </div>
         </div>
 
-        <hr />
-        <label for="resumePdf">Or upload resume PDF (stored locally)</label>
-        <input id="resumePdf" type="file" accept="application/pdf,.pdf" />
-        <div class="row">
-          <button id="savePdfBtn" class="ghost">Save Resume PDF</button>
+        <!-- Scan Action Card -->
+        <div style="background:#ffffff; border:1px solid #bbc9ce; border-radius:14px; padding:20px 16px; text-align:center; box-shadow:0 2px 8px rgba(0,0,0,0.06);">
+            <p style="font-size:16px; font-weight:800; color:#1a1c1f; margin:0 0 6px; letter-spacing:-0.02em;">Ready to Analyze?</p>
+            <p style="font-size:12px; color:#3c494d; margin:0 0 16px; line-height:1.6;">Scan the current job page and match it against your resume.</p>
+            <button id="scanBtn"
+                    style="width:100%; display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:12px 16px; background:#18d2f5; color:#001f26; border:none; border-radius:12px; font-size:14px; font-weight:700; font-family:'Sora',sans-serif; cursor:pointer; box-shadow:0 0 20px rgba(24,210,245,0.35); transition:all 0.3s; letter-spacing:-0.01em;"
+                    onmouseover="this.style.boxShadow='0 0 28px rgba(24,210,245,0.55)'; this.style.transform='translateY(-1px)'"
+                    onmouseout="this.style.boxShadow='0 0 20px rgba(24,210,245,0.35)'; this.style.transform='translateY(0)'">
+                <span class="material-symbols-outlined" style="font-size:20px; font-variation-settings:'FILL' 1;">qr_code_scanner</span>
+                Scan Job Page
+            </button>
         </div>
-      </div>
-    </section>
 
-    <section id="resultsSection" class="card hidden">
-      <h2>Match Results</h2>
-      <div class="scoreGrid">
-        <p class="score">Base: <span id="scoreValue">-</span>/100</p>
-        <p class="score ai">AI-Calibrated: <span id="aiScoreValue">-</span>/100</p>
-      </div>
-      <p><strong>Job Title:</strong> <span id="jobTitle">-</span></p>
+        <!-- Results Section -->
+        <div id="resultsSection" style="display:none; flex-direction:column; gap:12px;">
 
-      <div class="row">
-        <button id="aiCalibrateBtn" class="ghost">AI Calibrate (OpenRouter)</button>
-      </div>
+            <!-- Score Ring Card -->
+            <div style="background:#ffffff; border:1px solid #bbc9ce; border-radius:14px; padding:20px 16px; text-align:center; box-shadow:0 2px 8px rgba(0,0,0,0.06); position:relative; overflow:hidden;">
+                <div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:160px; height:160px; background:radial-gradient(circle, rgba(24,210,245,0.15), transparent 70%); pointer-events:none;"></div>
+                <p style="font-size:10px; font-weight:600; color:#3c494d; letter-spacing:0.1em; text-transform:uppercase; margin:0 0 16px;">Match Score</p>
+                <div style="position:relative; width:128px; height:128px; margin:0 auto;">
+                    <svg style="width:100%; height:100%; transform:rotate(-90deg);" viewBox="0 0 100 100">
+                        <circle cx="50" cy="50" r="45" fill="transparent" stroke="#e2e2e6" stroke-width="8"/>
+                        <circle id="scoreCirclePath" cx="50" cy="50" r="45" fill="transparent"
+                                stroke="url(#cyanGradient)" stroke-dasharray="283" stroke-dashoffset="283"
+                                stroke-linecap="round" stroke-width="8"/>
+                        <defs>
+                            <linearGradient id="cyanGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" stop-color="#18d2f5"/>
+                                <stop offset="100%" stop-color="#00687a"/>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                    <div style="position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+                        <span id="scoreValue" style="font-size:28px; font-weight:800; color:#1a1c1f; line-height:1; letter-spacing:-0.02em;">--</span>
+                        <span style="font-size:10px; font-weight:600; color:#3c494d; margin-top:2px;">/&nbsp;100</span>
+                    </div>
+                </div>
+                <button id="aiCalibrateBtn"
+                        style="margin-top:16px; display:inline-flex; align-items:center; gap:6px; padding:8px 16px; background:#e40a65; color:#fff; border:none; border-radius:8px; font-size:12px; font-weight:700; font-family:'Sora',sans-serif; cursor:pointer; transition:background 0.2s;"
+                        onmouseover="this.style.background='#c0004f'" onmouseout="this.style.background='#e40a65'">
+                    <span class="material-symbols-outlined" style="font-size:17px; font-variation-settings:'FILL' 1;">psychology</span>
+                    AI Scoring
+                </button>
+            </div>
 
-      <section id="aiInsights" class="subcard hidden">
-        <h3>AI Role Analysis</h3>
-        <p><strong>Domain:</strong> <span id="aiDomain">-</span></p>
-        <p><strong>Confidence:</strong> <span id="aiConfidence">-</span></p>
-      </section>
+            <!-- Matched Keywords -->
+            <div style="background:#ffffff; border:1px solid #bbc9ce; border-radius:14px; padding:14px 16px; box-shadow:0 2px 8px rgba(0,0,0,0.06);">
+                <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
+                    <span class="material-symbols-outlined" style="font-size:18px; color:#00687a; font-variation-settings:'FILL' 1;">check_circle</span>
+                    <p style="font-size:13px; font-weight:700; color:#1a1c1f; margin:0;">Matched Keywords</p>
+                </div>
+                <div id="matchedKeywords" style="display:flex; flex-wrap:wrap; gap:6px;"></div>
+            </div>
 
-      <div class="chipsWrap">
-        <h3>Matched Keywords</h3>
-        <div id="matchedKeywords" class="chips"></div>
-      </div>
+            <!-- Missing Keywords -->
+            <div style="background:#ffffff; border:1px solid #bbc9ce; border-radius:14px; padding:14px 16px; box-shadow:0 2px 8px rgba(0,0,0,0.06);">
+                <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
+                    <span class="material-symbols-outlined" style="font-size:18px; color:#b7004f; font-variation-settings:'FILL' 1;">cancel</span>
+                    <p style="font-size:13px; font-weight:700; color:#1a1c1f; margin:0;">Missing Keywords</p>
+                </div>
+                <div id="missingKeywords" style="display:flex; flex-wrap:wrap; gap:6px;"></div>
+            </div>
 
-      <div class="chipsWrap">
-        <h3>Missing Keywords</h3>
-        <div id="missingKeywords" class="chips"></div>
-      </div>
-    </section>
+            <!-- AI Insights & Recommendations -->
+            <div id="aiInsights" style="display:none; flex-direction:column; gap:10px;">
 
-    <section id="settingsSection" class="card hidden">
-      <h2>Settings</h2>
-      <label for="apiProvider">AI Provider</label>
-      <select id="apiProvider">
-        <option value="openrouter">OpenRouter</option>
-        <option value="gemini">Gemini</option>
-      </select>
+                <!-- Header row with meta -->
+                <div style="background:#ffffff; border:1px solid rgba(114,18,255,0.25); border-radius:14px; padding:14px 16px; box-shadow:0 2px 12px rgba(114,18,255,0.08);">
+                    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <span class="material-symbols-outlined" style="font-size:18px; color:#7212ff; font-variation-settings:'FILL' 1;">psychology</span>
+                            <p style="font-size:13px; font-weight:700; color:#7212ff; margin:0;">AI Analysis</p>
+                        </div>
+                        <div style="display:flex; gap:12px;">
+                            <span style="font-size:10px; font-weight:600; color:#3c494d; background:#f3f3f7; padding:3px 8px; border-radius:99px;">
+                                Domain: <span id="aiDomain" style="color:#7212ff;"></span>
+                            </span>
+                            <span style="font-size:10px; font-weight:600; color:#3c494d; background:#f3f3f7; padding:3px 8px; border-radius:99px;">
+                                Conf: <span id="aiConfidence" style="color:#7212ff;"></span>
+                            </span>
+                        </div>
+                    </div>
+                    <!-- Gap summary -->
+                    <p id="aiGapSummary" style="font-size:12px; color:#3c494d; line-height:1.6; margin:0; padding:10px; background:#f8f4ff; border-radius:8px; border-left:3px solid #7212ff;"></p>
+                    <!-- Projected score -->
+                    <div id="aiProjectedScore" style="display:none; margin-top:10px; padding:8px 12px; background:linear-gradient(135deg,#18d2f5 0%,#00687a 100%); border-radius:8px; color:#fff; font-size:12px; font-weight:700; text-align:center;"></div>
+                </div>
 
-      <label for="apiKey">API Key</label>
-      <input id="apiKey" type="password" placeholder="OpenRouter: sk-or-... / Gemini: AIza..." />
+                <!-- Critical Additions -->
+                <div id="aiCriticalSection" style="display:none; background:#ffffff; border:1px solid #bbc9ce; border-radius:14px; padding:14px 16px; box-shadow:0 2px 8px rgba(0,0,0,0.06);">
+                    <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
+                        <span class="material-symbols-outlined" style="font-size:18px; color:#e40a65; font-variation-settings:'FILL' 1;">priority_high</span>
+                        <p style="font-size:13px; font-weight:700; color:#1a1c1f; margin:0;">Critical Additions</p>
+                        <span style="margin-left:auto; font-size:10px; color:#3c494d; background:#ffd9df; padding:2px 8px; border-radius:99px; font-weight:600;">Must Fix</span>
+                    </div>
+                    <div id="aiCriticalList" style="display:flex; flex-direction:column; gap:8px;"></div>
+                </div>
 
-      <label for="modelName">Model</label>
-      <input id="modelName" type="text" placeholder="openrouter/auto" />
+                <!-- Rewrite Suggestions -->
+                <div id="aiRewriteSection" style="display:none; background:#ffffff; border:1px solid #bbc9ce; border-radius:14px; padding:14px 16px; box-shadow:0 2px 8px rgba(0,0,0,0.06);">
+                    <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
+                        <span class="material-symbols-outlined" style="font-size:18px; color:#00687a; font-variation-settings:'FILL' 1;">edit_note</span>
+                        <p style="font-size:13px; font-weight:700; color:#1a1c1f; margin:0;">Bullet Rewrites</p>
+                        <span style="margin-left:auto; font-size:10px; color:#3c494d; background:#adecff; padding:2px 8px; border-radius:99px; font-weight:600;">Improve</span>
+                    </div>
+                    <div id="aiRewriteList" style="display:flex; flex-direction:column; gap:10px;"></div>
+                </div>
 
-      <div class="row">
-        <button id="saveApiKeyBtn">Save Settings</button>
-        <button id="clearApiKeyBtn" class="danger">Clear</button>
-      </div>
-    </section>
-  </main>
+                <!-- Quick Wins -->
+                <div id="aiQuickWinsSection" style="display:none; background:#ffffff; border:1px solid #bbc9ce; border-radius:14px; padding:14px 16px; box-shadow:0 2px 8px rgba(0,0,0,0.06);">
+                    <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
+                        <span class="material-symbols-outlined" style="font-size:18px; color:#f59e0b; font-variation-settings:'FILL' 1;">bolt</span>
+                        <p style="font-size:13px; font-weight:700; color:#1a1c1f; margin:0;">Quick Wins</p>
+                        <span style="margin-left:auto; font-size:10px; color:#3c494d; background:#fef3c7; padding:2px 8px; border-radius:99px; font-weight:600;">Easy Points</span>
+                    </div>
+                    <ul id="aiQuickWinsList" style="margin:0; padding-left:16px; display:flex; flex-direction:column; gap:6px;"></ul>
+                </div>
 
-  <script src="scorer.js"></script>
-  <script src="ai.js"></script>
-  <script src="learning.js"></script>
-  <script src="popup.js"></script>
+                <!-- Sections to Add -->
+                <div id="aiSectionsSection" style="display:none; background:#ffffff; border:1px solid #bbc9ce; border-radius:14px; padding:14px 16px; box-shadow:0 2px 8px rgba(0,0,0,0.06);">
+                    <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
+                        <span class="material-symbols-outlined" style="font-size:18px; color:#3c494d; font-variation-settings:'FILL' 1;">add_box</span>
+                        <p style="font-size:13px; font-weight:700; color:#1a1c1f; margin:0;">Sections to Add</p>
+                    </div>
+                    <div id="aiSectionsList" style="display:flex; flex-wrap:wrap; gap:6px;"></div>
+                </div>
+
+            </div><!-- /aiInsights -->
+
+
+        </div><!-- /resultsSection -->
+    </main>
+
+    <script src="pdf.min.js"></script>
+    <script src="mammoth.browser.min.js"></script>
+    <script src="resume-parser.js"></script>
+    <script src="scorer.js"></script>
+    <script src="learning.js"></script>
+    <script src="ai.js"></script>
+    <script src="popup.js"></script>
 </body>
 </html>

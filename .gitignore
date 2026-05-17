@@ -1,0 +1,4 @@
+node_modules/
+*.log
+tailwindcss.exe
+tw.exe
